@@ -22,26 +22,48 @@ struct tar_t
     char padding[12];             /* 500 */
 };
 
+
+
 /**
- * Launches another executable given as argument,
- * parses its output and check whether or not it matches "*** The program has crashed ***".
- * @param the path to the executable
- * @return -1 if the executable cannot be launched,
- *          0 if it is launched but does not print "*** The program has crashed ***",
- *          1 if it is launched and prints "*** The program has crashed ***".
- *
- * BONUS (for fun, no additional marks) without modifying this code,
- * compile it and use the executable to restart our computer.
+ * Computes the checksum for a tar header and encode it on the header
+ * @param entry: The tar header
+ * @return the value of the checksum
  */
-int main(int argc, char* argv[])
+unsigned int calculate_checksum(struct tar_t* entry){
+    // use spaces for the checksum bytes while calculating the checksum
+    memset(entry->chksum, ' ', 8);
+
+    // sum of entire metadata
+    unsigned int check = 0;
+    unsigned char* raw = (unsigned char*) entry;
+    for(int i = 0; i < 512; i++){
+        check += raw[i];
+    }
+
+    snprintf(entry->chksum, sizeof(entry->chksum), "%06o0", check);
+
+    entry->chksum[6] = '\0';
+    entry->chksum[7] = ' ';
+    return check;
+}
+
+int createTar(struct tar_t* entry) {
+    FILE *fptr;
+    fptr = fopen("archive.tar", "w");
+
+    calculate_checksum(entry);
+
+    fwrite(entry, 512, 17, fptr);
+    fclose(fptr);
+};
+
+int test(char exec[], char archive[])
 {
-    if (argc < 2)
-        return -1;
     int rv = 0;
     char cmd[51];
-    strncpy(cmd, argv[1], 25);
+    strncpy(cmd, exec, 25);
     cmd[26] = '\0';
-    strncat(cmd, " archive.tar", 25);
+    strncat(cmd, archive, 25);
     char buf[33];
     FILE *fp;
 
@@ -70,25 +92,26 @@ int main(int argc, char* argv[])
     return rv;
 }
 
+
+
+
+
+
 /**
- * Computes the checksum for a tar header and encode it on the header
- * @param entry: The tar header
- * @return the value of the checksum
+ * Launches another executable given as argument,
+ * parses its output and check whether or not it matches "*** The program has crashed ***".
+ * @param the path to the executable
+ * @return -1 if the executable cannot be launched,
+ *          0 if it is launched but does not print "*** The program has crashed ***",
+ *          1 if it is launched and prints "*** The program has crashed ***".
+ *
+ * BONUS (for fun, no additional marks) without modifying this code,
+ * compile it and use the executable to restart our computer.
  */
-unsigned int calculate_checksum(struct tar_t* entry){
-    // use spaces for the checksum bytes while calculating the checksum
-    memset(entry->chksum, ' ', 8);
+int main(int argc, char* argv[]) {
 
-    // sum of entire metadata
-    unsigned int check = 0;
-    unsigned char* raw = (unsigned char*) entry;
-    for(int i = 0; i < 512; i++){
-        check += raw[i];
-    }
-
-    snprintf(entry->chksum, sizeof(entry->chksum), "%06o0", check);
-
-    entry->chksum[6] = '\0';
-    entry->chksum[7] = ' ';
-    return check;
-}
+    struct tar_t* header;
+    createTar(header);
+    
+    test("./extractor_x86_64", " archive.tar");
+};
