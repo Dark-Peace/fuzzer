@@ -57,13 +57,13 @@ int createTar(struct tar_t* entry) {
     fclose(fptr);
 };
 
-int test(char exec[], char archive[])
+int test(int argc, char* argv[])
 {
     int rv = 0;
     char cmd[51];
-    strncpy(cmd, exec, 25);
+    strncpy(cmd, argv[1], 25);
     cmd[26] = '\0';
-    strncat(cmd, archive, 25);
+    strncat(cmd, " archive.tar", 25);
     char buf[33];
     FILE *fp;
 
@@ -93,10 +93,6 @@ int test(char exec[], char archive[])
 }
 
 
-
-
-
-
 /**
  * Launches another executable given as argument,
  * parses its output and check whether or not it matches "*** The program has crashed ***".
@@ -110,8 +106,8 @@ int test(char exec[], char archive[])
  */
 int main(int argc, char* argv[]) {
 
-    struct tar_t* header;
-    createTar(header);
-    
-    test("./extractor_x86_64", " archive.tar");
+    struct tar_t header;
+    createTar(&header);
+    // execution: ./name extractor_x86_64
+    test(argc, argv);
 };
