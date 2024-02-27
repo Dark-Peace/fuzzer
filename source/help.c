@@ -169,6 +169,7 @@ int test() {
  */
 int main(int argc, char* argv[]) {
     struct tar_t header;
+    tar_to_struct(&header);
     introduce_errors(&header);
     createTar(&header);
     // execution: ./name extractor_x86_64
