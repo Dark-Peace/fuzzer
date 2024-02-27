@@ -121,11 +121,10 @@ int createTar(struct tar_t* entry) {
     return 0;
 };
 
-int test(int argc, char* argv[])
-{
+int test() {
     int rv = 0;
     char cmd[51];
-    strncpy(cmd, argv[1], 25);
+    strncpy(cmd, "./extractor_x86_64", 25);
     cmd[26] = '\0';
     strncat(cmd, " archive.tar", 25);
     char buf[33];
@@ -170,12 +169,9 @@ int test(int argc, char* argv[])
  */
 int main(int argc, char* argv[]) {
     struct tar_t header;
-    printf("ok\n");
     introduce_errors(&header);
-    printf("ok\n");
     createTar(&header);
-    printf("ok\n");
     // execution: ./name extractor_x86_64
-    test(argc, argv);
+    test();
     return 0;
 };
