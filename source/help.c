@@ -22,6 +22,38 @@ struct tar_t
     char padding[12];             /* 500 */
 };
 
+int BLOCK_SIZE = 512;
+int PARAM_NUM = 17;
+
+
+
+
+
+
+int tar_to_struct(struct tar_t* entry) {
+    FILE *fptr;
+    fptr = fopen("base.tar", "r");
+
+    for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->uid[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->gid[i] = fgetc(fptr); }
+    for (int i = 0; i < 12; i++) { entry->size[i] = fgetc(fptr); }
+    for (int i = 0; i < 12; i++) { entry->mtime[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->chksum[i] = fgetc(fptr); }
+    entry->typeflag = fgetc(fptr);
+    for (int i = 0; i < 100; i++) { entry->linkname[i] = fgetc(fptr); }
+    for (int i = 0; i < 6; i++) { entry->magic[i] = fgetc(fptr); }
+    for (int i = 0; i < 2; i++) { entry->version[i] = fgetc(fptr); }
+    for (int i = 0; i < 32; i++) { entry->uname[i] = fgetc(fptr); }
+    for (int i = 0; i < 32; i++) { entry->gname[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->devmajor[i] = fgetc(fptr); }
+    for (int i = 0; i < 8; i++) { entry->devminor[i] = fgetc(fptr); }
+    for (int i = 0; i < 155; i++) { entry->prefix[i] = fgetc(fptr); }
+    for (int i = 0; i < 12; i++) { entry->padding[i] = fgetc(fptr); }
+
+    fclose(fptr);
+}
 
 
 /**
@@ -36,7 +68,7 @@ unsigned int calculate_checksum(struct tar_t* entry){
     // sum of entire metadata
     unsigned int check = 0;
     unsigned char* raw = (unsigned char*) entry;
-    for(int i = 0; i < 512; i++){
+    for(int i = 0; i < BLOCK_SIZE; i++){
         check += raw[i];
     }
 
@@ -53,7 +85,7 @@ int createTar(struct tar_t* entry) {
 
     calculate_checksum(entry);
 
-    fwrite(entry, 512, 17, fptr);
+    fwrite(entry, BLOCK_SIZE, PARAM_NUM, fptr);
     fclose(fptr);
 };
 
@@ -105,8 +137,8 @@ int test(int argc, char* argv[])
  * compile it and use the executable to restart our computer.
  */
 int main(int argc, char* argv[]) {
-
     struct tar_t header;
+    tar_to_struct(&header);
     createTar(&header);
     // execution: ./name extractor_x86_64
     test(argc, argv);
