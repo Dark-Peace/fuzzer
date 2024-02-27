@@ -30,7 +30,7 @@ int PARAM_NUM = 17;
 
 
 
-int tar_to_struct(struct tar_t* entry) {
+int tar_to_struct(struct tar_t* entry, char* content[512]) {
     FILE *fptr;
     fptr = fopen("base.tar", "r");
 
@@ -51,9 +51,16 @@ int tar_to_struct(struct tar_t* entry) {
     for (int i = 0; i < 8; i++) { entry->devminor[i] = fgetc(fptr); }
     for (int i = 0; i < 155; i++) { entry->prefix[i] = fgetc(fptr); }
     for (int i = 0; i < 12; i++) { entry->padding[i] = fgetc(fptr); }
+    for (int i = 0; i < 512; i++) { content[i] = fgetc(fptr); }
 
     fclose(fptr);
 }
+
+int introduce_errors(struct tar_t* entry, char* content[512]) {
+    // introduce errors in the tar file
+
+}
+
 
 
 /**
@@ -79,13 +86,34 @@ unsigned int calculate_checksum(struct tar_t* entry){
     return check;
 }
 
-int createTar(struct tar_t* entry) {
+int createTar(struct tar_t* entry, char* content[512]) {
     FILE *fptr;
     fptr = fopen("archive.tar", "w");
 
+    // last modif to the data
     calculate_checksum(entry);
 
-    fwrite(entry, BLOCK_SIZE, PARAM_NUM, fptr);
+    // write the result to a tar file
+    fwrite(entry->name, 100, 1, fptr);
+    fwrite(entry->mode, 8, 1, fptr);
+    fwrite(entry->uid, 8, 1, fptr);
+    fwrite(entry->gid, 8, 1, fptr);
+    fwrite(entry->size, 12, 1, fptr);
+    fwrite(entry->mtime, 12, 1, fptr);
+    fwrite(entry->chksum, 8, 1, fptr);
+    fwrite(&(entry->typeflag), 1, 1, fptr);
+    fwrite(entry->linkname, 100, 1, fptr);
+    fwrite(entry->magic, 6, 1, fptr);
+    fwrite(entry->version, 2, 1, fptr);
+    fwrite(entry->uname, 32, 1, fptr);
+    fwrite(entry->gname, 32, 1, fptr);
+    fwrite(entry->devmajor, 8, 1, fptr);
+    fwrite(entry->devminor, 8, 1, fptr);
+    fwrite(entry->prefix, 155, 1, fptr);
+    fwrite(entry->padding, 12, 1, fptr);
+
+    fwrite(content, BLOCK_SIZE, 1, fptr);
+
     fclose(fptr);
 };
 
@@ -138,8 +166,10 @@ int test(int argc, char* argv[])
  */
 int main(int argc, char* argv[]) {
     struct tar_t header;
-    tar_to_struct(&header);
-    createTar(&header);
+    char content[512];
+    tar_to_struct(&header, &content);
+    introduce_errors(&header, &content);
+    createTar(&header, &content);
     // execution: ./name extractor_x86_64
     test(argc, argv);
 };
