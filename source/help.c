@@ -20,6 +20,7 @@ struct tar_t
     char devminor[8];             /* 337 */
     char prefix[155];             /* 345 */
     char padding[12];             /* 500 */
+    char content[512];             /* 512 */
 };
 
 const int BLOCK_SIZE = 512;
@@ -51,14 +52,13 @@ char* tar_to_struct(struct tar_t* entry) {
     for (int i = 0; i < 8; i++) { entry->devminor[i] = fgetc(fptr); }
     for (int i = 0; i < 155; i++) { entry->prefix[i] = fgetc(fptr); }
     for (int i = 0; i < 12; i++) { entry->padding[i] = fgetc(fptr); }
-    char content[512];
-    for (int i = 0; i < BLOCK_SIZE; i++) { content[i] = fgetc(fptr); }
+    for (int i = 0; i < BLOCK_SIZE; i++) { entry->content[i] = fgetc(fptr); }
 
     fclose(fptr);
     return 0;
 }
 
-int introduce_errors(struct tar_t* entry, char* content[512]) {
+int introduce_errors(struct tar_t* entry) {
     // introduce errors in the tar file
 
     return 0;
@@ -89,7 +89,7 @@ unsigned int calculate_checksum(struct tar_t* entry){
     return check;
 }
 
-int createTar(struct tar_t* entry, char* content[512]) {
+int createTar(struct tar_t* entry) {
     FILE *fptr;
     fptr = fopen("archive.tar", "w");
 
@@ -115,7 +115,7 @@ int createTar(struct tar_t* entry, char* content[512]) {
     fwrite(entry->prefix, 155, 1, fptr);
     fwrite(entry->padding, 12, 1, fptr);
 
-    fwrite(content, BLOCK_SIZE, 1, fptr);
+    fwrite(entry->content, BLOCK_SIZE, 1, fptr);
 
     fclose(fptr);
     return 0;
@@ -170,10 +170,11 @@ int test(int argc, char* argv[])
  */
 int main(int argc, char* argv[]) {
     struct tar_t header;
-    char content[512];
-    memccpy(&content, tar_to_struct(&header), ' ', BLOCK_SIZE);
-    introduce_errors(&header, &content);
-    createTar(&header, &content);
+    printf("ok\n");
+    introduce_errors(&header);
+    printf("ok\n");
+    createTar(&header);
+    printf("ok\n");
     // execution: ./name extractor_x86_64
     test(argc, argv);
     return 0;
