@@ -33,8 +33,18 @@ const int PARAM_NUM = 17;
 
 char* tar_to_struct(struct tar_t* entry) {
     FILE *fptr;
+    FILE *fptr2;
     fptr = fopen("base.tar", "r");
+    fptr2 = fopen("archive.tar", "w");
 
+    char ch;
+    ch = fgetc(fptr);
+    while (ch != EOF) {
+        fputc(ch, fptr2);
+        ch = fgetc(fptr);
+    }
+
+/*
     for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->uid[i] = fgetc(fptr); }
@@ -53,7 +63,8 @@ char* tar_to_struct(struct tar_t* entry) {
     for (int i = 0; i < 155; i++) { entry->prefix[i] = fgetc(fptr); }
     for (int i = 0; i < 12; i++) { entry->padding[i] = fgetc(fptr); }
     for (int i = 0; i < BLOCK_SIZE; i++) { entry->content[i] = fgetc(fptr); }
-
+ */
+    fclose(fptr2);
     fclose(fptr);
     return 0;
 }
