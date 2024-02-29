@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef UTILS
+#define UTILS
+
+char archive[] = "archive.tar";
 const char control_chars[] = { '\n', '\t', '\b', '\"', '\'', '\a',
                                 '\v', '\r', '\f', '\\', '\0', '\x7F',
                                 '\x1A', '\x1B', '\x1C', '\x1D', '\x1E',
-                                '\x1F', ' ',};
+                                '\x1F', ' '};
 
 struct tar_t {                 /* byte offset */
     char name[100];               /*   0 */
@@ -45,7 +49,7 @@ const enum header_len {
     DEVMINOR_LEN = 8,
     PREFIX_LEN = 155,
     PADDING_LEN = 12
-};
+} lens; //otherwise a warning that this instance of it doesnt have a name
 
 /* Bits used in the mode field, values in octal.  */
 #define TSUID    04000          /* set UID on execution */
@@ -68,3 +72,6 @@ static const unsigned ALL_MODE[] = {TSUID,TSGID,TSVTX,TUREAD,
 
 const int BLOCK_SIZE = 512;
 const int PARAM_NUM = 17;
+
+#endif
+

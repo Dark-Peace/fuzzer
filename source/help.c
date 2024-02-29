@@ -1,11 +1,11 @@
-#include "tests.c"
-
-
+#include "utils.h"
 
 // Convert a given tar file to a struct
-char* tar_to_struct(struct tar_t* entry) {
+int tar_to_struct(struct tar_t* entry) {
     FILE *fptr;
     fptr = fopen("base.tar", "r");
+    if(!fptr)
+    	return 0;
 
     for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
@@ -27,7 +27,7 @@ char* tar_to_struct(struct tar_t* entry) {
     for (int i = 0; i < BLOCK_SIZE; i++) { entry->content[i] = fgetc(fptr); }
 
     fclose(fptr);
-    return 0;
+    return 1;
 }
 
 
@@ -138,32 +138,3 @@ int test(char exec[], char path[]) {
     return rv;
 }
 
-
- 
-/**
- * Creates tars and tests if they crash the program provided as argument. If one does, copy it and name it success_X.
- * The methods used for crashing are: incomplete/inappropriate header.
- * Archive shinanigens
- */
-int main(int argc, char* argv[]) {
-	// For proper naming of the successful tars.
-	int crashCount = 0;
-    // Names of the successful tars.
-    char success[] = "success_x.tar";
-
-    // Load a tar from a base file.
-    struct tar_t header;
-    tar_to_struct(&header);
-    introduce_errors(&header);
-    
-    char archive[] = "archive.tar";
-    createTar(&header, archive);
-    // execution: ./name extractor_x86_64
-    if test(argv[1], archive)
-    {
-    	crashCount += 1;
-    	success[9] = crashCount;
-    	createTar(&header, success);
-    }
-    return 0;
-};
