@@ -2,9 +2,7 @@
 
 
 
-
-
-
+// Convert a given tar file to a struct
 char* tar_to_struct(struct tar_t* entry) {
     FILE *fptr;
     fptr = fopen("base.tar", "r");
@@ -32,12 +30,12 @@ char* tar_to_struct(struct tar_t* entry) {
     return 0;
 }
 
+
+// introduce errors in the tar file
 int introduce_errors(struct tar_t* entry) {
-    // introduce errors in the tar file
 
     return 0;
 }
-
 
 
 /**
@@ -63,9 +61,11 @@ unsigned int calculate_checksum(struct tar_t* entry){
     return check;
 }
 
-int createTar(struct tar_t* entry) {
+
+// Create a valid tar from the given struct.
+int createTar(struct tar_t* entry, char path[]) {
     FILE *fptr;
-    fptr = fopen("archive.tar", "w");
+    fptr = fopen(path, "w");
 
     // last modif to the data
     calculate_checksum(entry);
@@ -95,12 +95,21 @@ int createTar(struct tar_t* entry) {
     return 0;
 };
 
-int test() {
+/**
+ * Launches another executable given as argument,
+ * parses its output and check whether or not it matches "*** The program has crashed ***".
+ * @param the path to the executable
+ * @return -1 if the executable cannot be launched,
+ *          0 if it is launched but does not print "*** The program has crashed ***",
+ *          1 if it is launched and prints "*** The program has crashed ***".
+ */
+int test(char exec[], char path[]) {
     int rv = 0;
-    char cmd[51];
-    strncpy(cmd, "./extractor_x86_64", 25);
+    char cmd[52];
+    strncpy(cmd, exec, 25);
     cmd[26] = '\0';
-    strncat(cmd, " archive.tar", 25);
+    cmd[27] = ' ';
+    strncat(cmd, path, 25);
     char buf[33];
     FILE *fp;
 
@@ -130,23 +139,31 @@ int test() {
 }
 
 
+ 
 /**
- * Launches another executable given as argument,
- * parses its output and check whether or not it matches "*** The program has crashed ***".
- * @param the path to the executable
- * @return -1 if the executable cannot be launched,
- *          0 if it is launched but does not print "*** The program has crashed ***",
- *          1 if it is launched and prints "*** The program has crashed ***".
- *
- * BONUS (for fun, no additional marks) without modifying this code,
- * compile it and use the executable to restart our computer.
+ * Creates tars and tests if they crash the program provided as argument. If one does, copy it and name it success_X.
+ * The methods used for crashing are: incomplete/inappropriate header.
+ * Archive shinanigens
  */
 int main(int argc, char* argv[]) {
+	// For proper naming of the successful tars.
+	int crashCount = 0;
+    // Names of the successful tars.
+    char success[] = "success_x.tar";
+
+    // Load a tar from a base file.
     struct tar_t header;
     tar_to_struct(&header);
     introduce_errors(&header);
-    createTar(&header);
+    
+    char archive[] = "archive.tar";
+    createTar(&header, archive);
     // execution: ./name extractor_x86_64
-    test();
+    if test(argv[1], archive)
+    {
+    	crashCount += 1;
+    	success[9] = crashCount;
+    	createTar(&header, success);
+    }
     return 0;
 };
