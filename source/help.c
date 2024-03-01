@@ -5,8 +5,11 @@ int tar_to_struct(struct tar_t* entry) {
     FILE *fptr;
     fptr = fopen("base.tar", "r");
     if(!fptr)
+    {
+        printf("Base file missing.\n");
     	return 0;
-
+	}
+	
     for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->uid[i] = fgetc(fptr); }
@@ -66,6 +69,11 @@ unsigned int calculate_checksum(struct tar_t* entry){
 int createTar(struct tar_t* entry, char path[]) {
     FILE *fptr;
     fptr = fopen(path, "w");
+    if(!fptr)
+    {
+    	return 0;	
+        printf("Could not write archive file.\n");
+    }
 
     // last modif to the data
     calculate_checksum(entry);
@@ -92,7 +100,7 @@ int createTar(struct tar_t* entry, char path[]) {
     fwrite(entry->content, BLOCK_SIZE, 1, fptr);
 
     fclose(fptr);
-    return 0;
+    return 1;
 };
 
 /**
@@ -105,11 +113,9 @@ int createTar(struct tar_t* entry, char path[]) {
  */
 int test(char exec[], char path[]) {
     int rv = 0;
-    char cmd[52];
+    char cmd[51];
     strncpy(cmd, exec, 25);
-    cmd[26] = '\0';
-    cmd[27] = ' ';
-    strncat(cmd, path, 25);
+    strncat(cmd, " archive.tar", 25);
     char buf[33];
     FILE *fp;
 

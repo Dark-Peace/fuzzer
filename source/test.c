@@ -5,7 +5,7 @@
 // For proper naming of the successful tars.
 int crashCount = 0;
 // Names of the successful tars.
-char success[] = "success_000.tar";
+char success[] = "success_x.tar";
 static struct tar_t header;
 char* extractor;
 
@@ -17,7 +17,7 @@ void header_field_test() {
     if (test(extractor, archive))
     {
     	crashCount += 1;
-    	success[9] = crashCount;
+    	success[8] = crashCount;
     	createTar(&header, success);
     }
     // Load a tar from a base file
