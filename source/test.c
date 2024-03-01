@@ -48,7 +48,7 @@ void basic_field_tests(char* field_name, char* field, int size) {
 
     // non ascii value (any emoji or unicode character in general is valid)
     // you can get unicode char on https://symbl.cc/fr/
-    single_basic_test(strcat(field_name, " is not ascii"), field, size, '日');
+    single_basic_test(strcat(field_name, " is not ascii"), field, size, '♥');
 
     // control characters
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
@@ -90,7 +90,7 @@ void test_mode() {
     // test all modes
     for (int i = 0; i < 12; i++) {
         sprintf(header.mode, "%07o", ALL_MODE[i]);
-        header_field_test("mode invalid");
+        header_field_test("bad mode");
     }
 }
 
@@ -102,14 +102,37 @@ void test_gid() {
     basic_field_tests("gid", header.gid, GID_LEN);
 }
 
+void single_test_size(char* test_name, int value) {
+    sprintf(header.size, "%0*lo", value);
+    header_field_test(test_name);
+}
+
 void test_size() {
     basic_field_tests("size", header.size, SIZE_LEN);
 
-    // @todo test sizes
+    single_test_size("negative size", -1);
+    single_test_size("size = 0", 0);
+    single_test_size("size = 1", 1);
+    single_test_size("size = 512", BLOCK_SIZE);
+    single_test_size("size too big", BLOCK_SIZE*10);
+}
+
+void single_test_mtime(char* test_name, int value) {
+    sprintf(header.mtime, "%lo", value);
+    header_field_test(test_name);
 }
 
 void test_mtime() {
     basic_field_tests("mtime", header.mtime, MTIME_LEN);
+
+    time_t now = time(NULL);
+    single_test_mtime("negative mtime", -1);
+    single_test_mtime("null mtime", 0);
+    single_test_mtime("mtime = now", now);
+    single_test_mtime("mtime = 1y ago", now - (3600*24*365));
+    single_test_mtime("mtime = 1y later", now + (3600*24*365));
+    single_test_mtime("mtime = max INT", 2147483647);
+    single_test_mtime("mtime = min INT", -2147483648);
 }
 
 void test_chksum() {
@@ -126,6 +149,17 @@ void test_magic() {
 
 void test_version() {
     basic_field_tests("version", header.version, VERSION_LEN);
+
+    // test every value
+    // we can afford it because there's not many
+    char version[3] = "00\0";
+    for (int i = 0; i < 8; i++) {
+        version[0] = "0"+i;
+        for (int j = 0; j < 8; j++) {
+            version[1] = "0"+j;
+            strncpy(header.version, version, VERSION_LEN);
+        }
+    }
 }
 
 void test_uname() {
@@ -134,6 +168,29 @@ void test_uname() {
 
 void test_gname() {
     basic_field_tests("gname", header.gname, GNAME_LEN);
+}
+
+void test_typeflag() {
+    // test negative
+    header.typeflag = -1;
+    header_field_test("negative typeflag");
+
+    // test non-ascii
+    header.typeflag = "♥";
+    header_field_test("non ascii typeflag");
+
+    for (int i = 0; i < (int) sizeof(control_chars); i++) {
+        header.typeflag = control_chars[i];
+        header_field_test("typeflag has a control character");
+    }
+
+    // test every value
+    // we can afford it because there's not many
+    for (int i = 0; i < 256; i++) {
+        header.typeflag = i;
+        header_field_test("bad typeflag");
+    }
+
 }
 
 

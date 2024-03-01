@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #ifndef UTILS
 #define UTILS
@@ -74,4 +75,3 @@ const int BLOCK_SIZE = 512;
 const int PARAM_NUM = 17;
 
 #endif
-
