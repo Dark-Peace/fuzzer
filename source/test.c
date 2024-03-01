@@ -11,71 +11,71 @@ char* extractor;
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void header_field_test() {
+void header_field_test(char* test_name) {
     createTar(&header, archive);
     // execution: ./name extractor_x86_64
-    if (test(extractor, archive))
-    {
+    if (test(extractor, archive)) {
     	crashCount += 1;
     	success[8] = crashCount;
+        printf("Crash: %s\n", test_name);
     	createTar(&header, success);
     }
     // Load a tar from a base file
     tar_to_struct(&header);
 }
 
-void single_basic_test(const char* field_name, char* field, int size, int value) {
+void single_basic_test(char* test_name, char* field, int size, int value) {
     // for each test, the field is filled with the test value, then the test is called
     memset(field, value, size-1);
     field[size - 1] = 0;                // null termination
-    header_field_test();
+    header_field_test(test_name);
 }
 
 
-void basic_field_tests(const char* field_name, char* field, int size) {
+void basic_field_tests(char* field_name, char* field, int size) {
     //----- invalid inputs -----
 
     // field empty
     strncpy(field, "", size);
     // no null termination
-    header_field_test();
+    header_field_test(strcat(field_name, "is empty"));
 
     // non numeral value
-    single_basic_test(field_name, field, size, 'a');
+    single_basic_test(strcat(field_name, " is not a number"), field, size, 'a');
 
     // non octal value
-    single_basic_test(field_name, field, size, '9');
+    single_basic_test(strcat(field_name, " is not octal"), field, size, '9');
 
     // non ascii value (any emoji or unicode character in general is valid)
     // you can get unicode char on https://symbl.cc/fr/
-    single_basic_test(field_name, field, size, '日');
+    single_basic_test(strcat(field_name, " is not ascii"), field, size, '日');
 
     // control characters
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
-        single_basic_test(field_name, field, size, control_chars[i]);
+        single_basic_test(strcat(field_name, " has a control character"), field, size, control_chars[i]);
     }
 
     //----- other inputs -----
 
     // max value
-    single_basic_test(field_name, field, size, '7');
+    single_basic_test(strcat(field_name, " is max"), field, size, '7');
 
     // 0 everywhere
-    single_basic_test(field_name, field, size, '0');
+    single_basic_test(strcat(field_name, " is 0"), field, size, '0');
 
     //----- null termination -----
 
     // no null termination
     memset(field, '1', size);
-    header_field_test();
+    header_field_test(strcat(field_name, " has no null termination"));
 
     // null termination midway
     memset(field, 0, size);
     memset(field, '1', size/2);
-    header_field_test();
+    header_field_test(strcat(field_name, " has null termination midway"));
 
     // null termination everywhere!
-    single_basic_test(field_name, field, size, 0);
+    single_basic_test(strcat(field_name, " has only null termination"), field, size, 0);
 
 }
 
@@ -90,6 +90,7 @@ void test_mode() {
     // test all modes
     for (int i = 0; i < 12; i++) {
         sprintf(header.mode, "%07o", ALL_MODE[i]);
+        header_field_test("mode invalid");
     }
 }
 
@@ -151,10 +152,10 @@ void test_fields() {
 }
 
 /**
- * Creates tars and tests if they crash the program provided as argument. 
+ * Creates tars and tests if they crash the program provided as argument.
  * If one does, copy it and name it success_X.
  * The methods used for crashing are: incomplete/inappropriate header.
- * Archive shinanigens
+ * Archive shenanigans
  */
 int main(int argc, char* argv[]) {
 	// should print what the error is about
@@ -167,4 +168,3 @@ int main(int argc, char* argv[]) {
     test_fields();
     return crashCount;
 };
-
