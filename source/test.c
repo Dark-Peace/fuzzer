@@ -158,6 +158,7 @@ void test_version() {
         for (int j = 0; j < 8; j++) {
             version[1] = "0"+j;
             strncpy(header.version, version, VERSION_LEN);
+            header_field_test("bad version");
         }
     }
 }
@@ -191,6 +192,14 @@ void test_typeflag() {
         header_field_test("bad typeflag");
     }
 
+}
+
+void test_ending() {
+    //@todo
+}
+
+void test_files() {
+    //@todo
 }
 
 
