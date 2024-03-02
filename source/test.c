@@ -13,14 +13,14 @@ char* extractor;
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void run_test(char* test_name) {
-    createTar(&header, archive);
+void run_test(char* test_name, bool has_content) {
+    createTar(&header, archive, has_content);
     // execution: ./name extractor_x86_64
     if (test(extractor, archive)) {
     	crashCount += 1;
     	success[8] = crashCount;
         printf("Crash: %s\n", test_name);
-    	createTar(&header, success);
+    	createTar(&header, success, has_content);
     }
     // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
@@ -29,7 +29,7 @@ void run_test(char* test_name) {
 void header_field_test(char* test_name) {
     // add archive termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test(test_name);
+    run_test(test_name, true);
 }
 
 void single_basic_test(char* test_name, char* field, int size, int value) {
@@ -204,7 +204,7 @@ void test_typeflag() {
 
 void test_files() {
     //@todo multiple files with same name
-    //@todo direcotry with content like it was a file
+    //@todo directory with content like it was a file
     //@todo very big file
 }
 
@@ -214,11 +214,12 @@ void test_archive_termination() {
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
-        run_test("invalid archive termination");
+        run_test("invalid archive termination", true);
     }
-    //@todo test with and without content, @todo also for other tests ?
-    //@todo archive termination midwayµ
-    //@todo archive termination and no content
+
+    // test file termination without file content before the termination
+    memset(header.termination, 0, TERM_SIZE);
+    run_test("file termination without content", false);
 }
 
 void test_empty_header() {

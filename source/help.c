@@ -59,7 +59,7 @@ unsigned int calculate_checksum(struct tar_t* entry){
 
 
 // Create a valid tar from the given struct.
-int createTar(struct tar_t* entry, char path[]) {
+int createTar(struct tar_t* entry, char path[], bool has_content) {
     FILE *fptr;
     fptr = fopen(path, "w");
     if(!fptr) {
@@ -89,7 +89,7 @@ int createTar(struct tar_t* entry, char path[]) {
     fwrite(entry->prefix, PREFIX_LEN, 1, fptr);
     fwrite(entry->padding, PADDING_LEN, 1, fptr);
 
-    fwrite(entry->content, BLOCK_SIZE, 1, fptr);
+    if (has_content) { fwrite(entry->content, BLOCK_SIZE, 1, fptr); }
 
     fwrite(entry->termination, TERM_SIZE, 1, fptr);
 
