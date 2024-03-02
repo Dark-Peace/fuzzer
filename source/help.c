@@ -9,7 +9,7 @@ int tar_to_struct(struct tar_t* entry) {
         printf("Base file missing.\n");
     	return 0;
 	}
-	
+
     for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
     for (int i = 0; i < 8; i++) { entry->uid[i] = fgetc(fptr); }
@@ -34,13 +34,6 @@ int tar_to_struct(struct tar_t* entry) {
 }
 
 
-// introduce errors in the tar file
-int introduce_errors(struct tar_t* entry) {
-
-    return 0;
-}
-
-
 /**
  * Computes the checksum for a tar header and encode it on the header
  * @param entry: The tar header
@@ -53,7 +46,7 @@ unsigned int calculate_checksum(struct tar_t* entry){
     // sum of entire metadata
     unsigned int check = 0;
     unsigned char* raw = (unsigned char*) entry;
-    for(int i = 0; i < BLOCK_SIZE; i++){
+    for(int i = 0; i < BLOCK_SIZE; i++) {
         check += raw[i];
     }
 
@@ -69,9 +62,8 @@ unsigned int calculate_checksum(struct tar_t* entry){
 int createTar(struct tar_t* entry, char path[]) {
     FILE *fptr;
     fptr = fopen(path, "w");
-    if(!fptr)
-    {
-    	return 0;	
+    if(!fptr) {
+    	return 0;
         printf("Could not write archive file.\n");
     }
 
@@ -79,25 +71,27 @@ int createTar(struct tar_t* entry, char path[]) {
     calculate_checksum(entry);
 
     // write the result to a tar file
-    fwrite(entry->name, 100, 1, fptr);
-    fwrite(entry->mode, 8, 1, fptr);
-    fwrite(entry->uid, 8, 1, fptr);
-    fwrite(entry->gid, 8, 1, fptr);
-    fwrite(entry->size, 12, 1, fptr);
-    fwrite(entry->mtime, 12, 1, fptr);
-    fwrite(entry->chksum, 8, 1, fptr);
+    fwrite(entry->name, NAME_LEN, 1, fptr);
+    fwrite(entry->mode, MODE_LEN, 1, fptr);
+    fwrite(entry->uid, UID_LEN, 1, fptr);
+    fwrite(entry->gid, GID_LEN, 1, fptr);
+    fwrite(entry->size, SIZE_LEN, 1, fptr);
+    fwrite(entry->mtime, MTIME_LEN, 1, fptr);
+    fwrite(entry->chksum, CHKSUM_LEN, 1, fptr);
     fwrite(&(entry->typeflag), 1, 1, fptr);
-    fwrite(entry->linkname, 100, 1, fptr);
-    fwrite(entry->magic, 6, 1, fptr);
-    fwrite(entry->version, 2, 1, fptr);
-    fwrite(entry->uname, 32, 1, fptr);
-    fwrite(entry->gname, 32, 1, fptr);
-    fwrite(entry->devmajor, 8, 1, fptr);
-    fwrite(entry->devminor, 8, 1, fptr);
-    fwrite(entry->prefix, 155, 1, fptr);
-    fwrite(entry->padding, 12, 1, fptr);
+    fwrite(entry->linkname, LINK_LEN, 1, fptr);
+    fwrite(entry->magic, MAGIC_LEN, 1, fptr);
+    fwrite(entry->version, VERSION_LEN, 1, fptr);
+    fwrite(entry->uname, UNAME_LEN, 1, fptr);
+    fwrite(entry->gname, GNAME_LEN, 1, fptr);
+    fwrite(entry->devmajor, DEVMAJOR_LEN, 1, fptr);
+    fwrite(entry->devminor, DEVMINOR_LEN, 1, fptr);
+    fwrite(entry->prefix, PREFIX_LEN, 1, fptr);
+    fwrite(entry->padding, PADDING_LEN, 1, fptr);
 
     fwrite(entry->content, BLOCK_SIZE, 1, fptr);
+
+    fwrite(entry->termination, TERM_SIZE, 1, fptr);
 
     fclose(fptr);
     return 1;
@@ -143,4 +137,3 @@ int test(char exec[], char path[]) {
     }
     return rv;
 }
-

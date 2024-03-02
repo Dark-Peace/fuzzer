@@ -9,9 +9,11 @@ char success[] = "success_x.tar";
 static struct tar_t header;
 char* extractor;
 
+
+
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void header_field_test(char* test_name) {
+void run_test(char* test_name) {
     createTar(&header, archive);
     // execution: ./name extractor_x86_64
     if (test(extractor, archive)) {
@@ -20,8 +22,14 @@ void header_field_test(char* test_name) {
         printf("Crash: %s\n", test_name);
     	createTar(&header, success);
     }
-    // Load a tar from a base file
+    // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
+}
+
+void header_field_test(char* test_name) {
+    // add archive termination
+    memset(header.termination, 0, TERM_SIZE);
+    run_test(test_name);
 }
 
 void single_basic_test(char* test_name, char* field, int size, int value) {
@@ -194,16 +202,28 @@ void test_typeflag() {
 
 }
 
-void test_ending() {
+void test_files() {
     //@todo
 }
 
-void test_files() {
+void test_archive_termination() {
+    // tar files end by 1024 bytes of 0, we test what happens if that's not the case
+    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1, TERM_SIZE+1, TERM_SIZE*2};
+
+    for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
+        memset(header.termination, 0, term_amount[i]);
+        run_test("invalid archive termination");
+    }
+    //@todo test with and without content, @todo also for other tests ?
+}
+
+void test_empty_header() {
     //@todo
 }
 
 
 void test_fields() {
+    test_empty_header();
 	test_mode();
 	test_uid();
 	test_gid();
@@ -215,6 +235,9 @@ void test_fields() {
 	test_version();
 	test_uname();
 	test_gname();
+    test_typeflag();
+    test_files();
+    test_archive_termination();
 }
 
 /**

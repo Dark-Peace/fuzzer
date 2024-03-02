@@ -29,7 +29,8 @@ struct tar_t {                 /* byte offset */
     char devminor[8];             /* 337 */
     char prefix[155];             /* 345 */
     char padding[12];             /* 500 */
-    char content[512];             /* 512 */
+    char content[512];            /* 512 */
+    char termination[1024];       /* 1024 */
 };
 
 const enum header_len {
@@ -72,6 +73,7 @@ static const unsigned ALL_MODE[] = {TSUID,TSGID,TSVTX,TUREAD,
                                     TGEXEC,TOREAD,TOWRITE,TOEXEC};
 
 const int BLOCK_SIZE = 512;
+const int TERM_SIZE = 1024;
 const int PARAM_NUM = 17;
 
 #endif
