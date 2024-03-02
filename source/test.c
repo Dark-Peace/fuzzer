@@ -203,7 +203,9 @@ void test_typeflag() {
 }
 
 void test_files() {
-    //@todo
+    //@todo multiple files with same name
+    //@todo direcotry with content like it was a file
+    //@todo very big file
 }
 
 void test_archive_termination() {
@@ -215,6 +217,8 @@ void test_archive_termination() {
         run_test("invalid archive termination");
     }
     //@todo test with and without content, @todo also for other tests ?
+    //@todo archive termination midwayµ
+    //@todo archive termination and no content
 }
 
 void test_empty_header() {
