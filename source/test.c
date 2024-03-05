@@ -1,28 +1,47 @@
 #include "utils.h"
 #include "help.c"
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+
 
 // For proper naming of the successful tars.
 int crashCount = 0;
 // Names of the successful tars.
-char success[] = "success_x.tar";
 static struct tar_t header;
 char* extractor;
 
 
+void saveSuccess(bool has_content)
+{
+	crashCount += 1;
+	char *success_nbr;
+	asprintf(&success_nbr, "%d", crashCount);
+	char success_string[16] = "success_";
+	strcat(success_string, success_nbr);
+	strncat(success_string, ".tar", 4);
+	createTar(&header, success_string, has_content, true, true);
+}
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
 void run_test(bool has_content) {
-    createTar(&header, archive, has_content);
-    // execution: ./name extractor_x86_64
-    if (test(extractor, archive)) {
-    	crashCount += 1;
-    	success[8] = crashCount;
-    	createTar(&header, success, has_content);
-    }
+    createTar(&header, archive, has_content, true, true);
+    // execution: ./name ./extractor_x86_64
+    if (test(extractor, archive))
+    	saveSuccess(has_content);
+
+    // Reset for next test : Load a tar from a base file
+    tar_to_struct(&header);
+}
+
+//
+void run_test_append(int amount) {
+    for (int i = 0; i < amount - 1; i++)
+    	createTar(&header, archive, true, false, false);
+	createTar(&header, archive, true, false, true);
+    
+    // execution: ./name ./extractor_x86_64
+    if (test(extractor, archive))
+    	saveSuccess(true);
+
     // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
 }
@@ -207,17 +226,41 @@ void test_typeflag() {
 }
 
 void test_files() {
-	mkdir("archive.tar", 0777);
-    //@todo multiple files with same name
-    //@todo directory with content like it was a file
-    //@todo very big file
+	// multiple files with the same name
+	print_test("5 same files in directory", " with the same name");
+	run_test_append(5);
+	
+    
+    print_test("big", " file");
+    // custom run_test to use the extraContent function
+    extraContent(&header, archive, true);
+    if (test(extractor, archive)) {
+		saveSuccess(true);
+    }
+    // Reset for next test : Load a tar from a base file
+    tar_to_struct(&header);
+    
+    print_test("big", " file without checksum");
+    // custom run_test to use the extraContent function
+    extraContent(&header, archive, false);
+    if (test(extractor, archive)) {
+		saveSuccess(true);
+    }
+    // Reset for next test : Load a tar from a base file
+    tar_to_struct(&header);
+    
+    strncpy(header.name, "archive/", NAME_LEN);
     print_test("directory", " as a file");
     run_test(true);
+    
+    
+	print_test("Too big directory", "");
+	run_test_append(1000);
 }
 
 void test_archive_termination() {
     // tar files end by 1024 bytes of 0, we test what happens if that's not the case
-    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1, TERM_SIZE+1};//, TERM_SIZE*2};
+    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1};//, TERM_SIZE+1};//, TERM_SIZE*2};// gives archive.tar not found, then segfault?
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
@@ -292,6 +335,7 @@ int main(int argc, char* argv[]) {
     	return 0;
     }
     extractor = argv[1];
+    
     test_fields();
     return crashCount;
 };
