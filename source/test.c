@@ -238,23 +238,17 @@ void test_fields() {
 	test_mode();
 	test_uid();
 	test_gid();
-    printf("ok");
 	test_size();
-    printf("okok");
 	test_mtime();
 	test_chksum();
-    printf("5");
 	test_linkname();
 	test_magic();
 	test_version();
 	test_uname();
 	test_gname();
     test_typeflag();
-    printf("6");
     test_files();
-    printf("7");
     test_archive_termination();
-    printf("8");
 }
 
 /**

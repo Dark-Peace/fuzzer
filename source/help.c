@@ -126,7 +126,7 @@ int test(char exec[], char path[]) {
         printf("Not the crash message\n");
         goto finally;
     } else {
-        printf("Crash message\n");
+        printf("Crash successful\n");
         rv = 1;
         goto finally;
     }
