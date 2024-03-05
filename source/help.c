@@ -109,7 +109,7 @@ int test(char exec[], char path[]) {
     int rv = 0;
     char cmd[51];
     strncpy(cmd, exec, 25);
-    strncat(cmd, " archive.tar", 25);
+    strncat(cmd, path, 25);
     char buf[33];
     FILE *fp;
 
@@ -126,7 +126,7 @@ int test(char exec[], char path[]) {
         printf("Not the crash message\n");
         goto finally;
     } else {
-        printf("Crash successful\n");
+        printf("Crash successful#############################################""\n");
         rv = 1;
         goto finally;
     }

@@ -217,7 +217,7 @@ void test_archive_termination() {
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
-        printf("Crash: archive termination with size %d\n", term_amount[i]);
+        printf("Test: archive termination with size %d\n", term_amount[i]);
         run_test(true);
     }
 
