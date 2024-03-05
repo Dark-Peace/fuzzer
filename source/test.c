@@ -13,32 +13,35 @@ char* extractor;
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void run_test(char* test_name, bool has_content) {
+void run_test(bool has_content) {
     createTar(&header, archive, has_content);
     // execution: ./name extractor_x86_64
     if (test(extractor, archive)) {
     	crashCount += 1;
     	success[8] = crashCount;
-        printf("Crash: %s\n", test_name);
     	createTar(&header, success, has_content);
     }
     // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
 }
 
-void header_field_test(char* test_name) {
+void header_field_test(int x) {
     // add archive termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test(test_name, true);
+    run_test(true);
 }
 
-void single_basic_test(char* test_name, char* field, int size, int value) {
+void single_basic_test(int x, char* field, int size, int value) {
     // for each test, the field is filled with the test value, then the test is called
     memset(field, value, size-1);
     field[size - 1] = 0;                // null termination
-    header_field_test(test_name);
+    header_field_test(0);
 }
 
+int print_test(char* field, char* test) {
+    printf("Crash: %s%s\n", field, test);
+    return 0;
+}
 
 void basic_field_tests(char* field_name, char* field, int size) {
     //----- invalid inputs -----
@@ -46,49 +49,49 @@ void basic_field_tests(char* field_name, char* field, int size) {
     // field empty
     strncpy(field, "", size);
     // no null termination
-    header_field_test(strcat(field_name, "is empty"));
+    header_field_test(print_test(field_name, " is empty"));
 
     // non numeral value
-    single_basic_test(strcat(field_name, " is not a number"), field, size, 'a');
+    single_basic_test(print_test(field_name, " is not a number"), field, size, 'a');
 
     // non octal value
-    single_basic_test(strcat(field_name, " is not octal"), field, size, '9');
+    single_basic_test(print_test(field_name, " is not octal"), field, size, '9');
 
     // non ascii value (any emoji or unicode character in general is valid)
     // you can get unicode char on https://symbl.cc/fr/
-    single_basic_test(strcat(field_name, " is not ascii"), field, size, '♥');
+    single_basic_test(print_test(field_name, " is not ascii"), field, size, '♥');
 
     // control characters
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
-        single_basic_test(strcat(field_name, " has a control character"), field, size, control_chars[i]);
+        single_basic_test(print_test(field_name, " has a control character"), field, size, control_chars[i]);
     }
 
     //----- other inputs -----
 
     // max value
-    single_basic_test(strcat(field_name, " is max"), field, size, '7');
+    single_basic_test(print_test(field_name, " is max"), field, size, '7');
 
     // 0 everywhere
-    single_basic_test(strcat(field_name, " is 0"), field, size, '0');
+    single_basic_test(print_test(field_name, " is 0"), field, size, '0');
 
     //----- null termination -----
 
     // no null termination
     memset(field, '1', size);
-    header_field_test(strcat(field_name, " has no null termination"));
+    header_field_test(print_test(field_name, " has no null termination"));
 
     // null termination midway
     memset(field, 0, size);
     memset(field, '1', size/2);
-    header_field_test(strcat(field_name, " has null termination midway"));
+    header_field_test(print_test(field_name, " has null termination midway"));
 
     // null termination everywhere!
-    single_basic_test(strcat(field_name, " has only null termination"), field, size, 0);
-
+    single_basic_test(print_test(field_name, " has only null termination"), field, size, 0);
 }
 
 
 void test_name() {
+    printf("n");
     basic_field_tests("name", header.name, NAME_LEN);
 }
 
@@ -98,7 +101,7 @@ void test_mode() {
     // test all modes
     for (int i = 0; i < 12; i++) {
         sprintf(header.mode, "%07o", ALL_MODE[i]);
-        header_field_test("bad mode");
+        header_field_test(print_test("mode", " is invalid"));
     }
 }
 
@@ -112,7 +115,7 @@ void test_gid() {
 
 void single_test_size(char* test_name, int value) {
     sprintf(header.size, "%0*lo", value);
-    header_field_test(test_name);
+    header_field_test(print_test(test_name, " "));
 }
 
 void test_size() {
@@ -122,12 +125,12 @@ void test_size() {
     single_test_size("size = 0", 0);
     single_test_size("size = 1", 1);
     single_test_size("size = 512", BLOCK_SIZE);
-    single_test_size("size too big", BLOCK_SIZE*10);
+    single_test_size("size too big", BLOCK_SIZE*5);
 }
 
 void single_test_mtime(char* test_name, int value) {
     sprintf(header.mtime, "%lo", value);
-    header_field_test(test_name);
+    header_field_test(print_test(test_name, " "));
 }
 
 void test_mtime() {
@@ -166,7 +169,7 @@ void test_version() {
         for (int j = 0; j < 8; j++) {
             version[1] = "0"+j;
             strncpy(header.version, version, VERSION_LEN);
-            header_field_test("bad version");
+            header_field_test(print_test("bad version", " "));
         }
     }
 }
@@ -182,22 +185,22 @@ void test_gname() {
 void test_typeflag() {
     // test negative
     header.typeflag = -1;
-    header_field_test("negative typeflag");
+    header_field_test(print_test("negative typeflag", " "));
 
     // test non-ascii
     header.typeflag = "♥";
-    header_field_test("non ascii typeflag");
+    header_field_test(print_test("non ascii typeflag", " "));
 
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
         header.typeflag = control_chars[i];
-        header_field_test("typeflag has a control character");
+        header_field_test(print_test("typeflag has a control character", " "));
     }
 
     // test every value
     // we can afford it because there's not many
     for (int i = 0; i < 256; i++) {
         header.typeflag = i;
-        header_field_test("bad typeflag");
+        header_field_test(print_test("bad typeflag", " "));
     }
 
 }
@@ -214,12 +217,14 @@ void test_archive_termination() {
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
-        run_test("invalid archive termination", true);
+        printf("Crash: archive termination with size %d\n", term_amount[i]);
+        run_test(true);
     }
 
     // test file termination without file content before the termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test("file termination without content", false);
+    print_test("file termination", " without content");
+    run_test(false);
 }
 
 void test_empty_header() {
@@ -229,20 +234,27 @@ void test_empty_header() {
 
 void test_fields() {
     test_empty_header();
+    test_name();
 	test_mode();
 	test_uid();
 	test_gid();
+    printf("ok");
 	test_size();
+    printf("okok");
 	test_mtime();
 	test_chksum();
+    printf("5");
 	test_linkname();
 	test_magic();
 	test_version();
 	test_uname();
 	test_gname();
     test_typeflag();
+    printf("6");
     test_files();
+    printf("7");
     test_archive_termination();
+    printf("8");
 }
 
 /**
