@@ -15,12 +15,12 @@ all: $(EXECUTABLE)
 
 # Rule to compile source files into object files
 %.o: %.c
-    $(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Rule to link object files into executable
 $(EXECUTABLE): $(OBJ_FILES)
-    $(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 # Clean target to remove generated files
 clean:
-    rm -f $(EXECUTABLE) $(OBJ_FILES)
+	rm -f $(EXECUTABLE) $(OBJ_FILES)
