@@ -1,28 +1,26 @@
+# Makefile for building the fuzzer program
+
+# Compiler options
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c11
-SRC_DIR = src
-BUILD_DIR = .
 
-# List all source files
-SRCS := $(wildcard $(SRC_DIR)/*.c)
+# Source files and output executable
+SRC_DIR = source
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES = $(SRC_FILES:.c=.o)
+EXECUTABLE = fuzzer
 
-# Derive object files from source files
-OBJS := $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+# Default target
+all: $(EXECUTABLE)
 
-# The final executable
-TARGET = fuzzer
+# Rule to compile source files into object files
+%.o: %.c
+    $(CC) $(CFLAGS) -c $< -o $@
 
-# Rule to compile object files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# Rule to link object files into executable
+$(EXECUTABLE): $(OBJ_FILES)
+    $(CC) $(CFLAGS) $^ -o $@
 
-# Rule to link object files and generate executable
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
-
-# Clean rule
+# Clean target to remove generated files
 clean:
-	$(RM) $(OBJS) $(TARGET)
-
-# Phony targets
-.PHONY: all clean
+    rm -f $(EXECUTABLE) $(OBJ_FILES)
