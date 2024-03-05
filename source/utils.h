@@ -7,7 +7,7 @@
 #ifndef UTILS
 #define UTILS
 
-char archive[] = " archive.tar";
+char archive[] = "archive.tar";
 const char control_chars[] = { '\n', '\t', '\b', '\"', '\'', '\a',
                                 '\v', '\r', '\f', '\\', '\0', '\x7F',
                                 '\x1A', '\x1B', '\x1C', '\x1D', '\x1E',

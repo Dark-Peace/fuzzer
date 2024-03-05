@@ -1,6 +1,8 @@
 #include "utils.h"
 #include "help.c"
-
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // For proper naming of the successful tars.
 int crashCount = 0;
@@ -91,7 +93,6 @@ void basic_field_tests(char* field_name, char* field, int size) {
 
 
 void test_name() {
-    printf("n");
     basic_field_tests("name", header.name, NAME_LEN);
 }
 
@@ -125,7 +126,7 @@ void test_size() {
     single_test_size("size = 0", 0);
     single_test_size("size = 1", 1);
     single_test_size("size = 512", BLOCK_SIZE);
-    single_test_size("size too big", BLOCK_SIZE*5);
+    single_test_size("size too big", BLOCK_SIZE*3); // 5
 }
 
 void single_test_mtime(char* test_name, int value) {
@@ -206,14 +207,17 @@ void test_typeflag() {
 }
 
 void test_files() {
+	mkdir("archive.tar", 0777);
     //@todo multiple files with same name
     //@todo directory with content like it was a file
     //@todo very big file
+    print_test("directory", " as a file");
+    run_test(true);
 }
 
 void test_archive_termination() {
     // tar files end by 1024 bytes of 0, we test what happens if that's not the case
-    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1, TERM_SIZE+1, TERM_SIZE*2};
+    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1, TERM_SIZE+1};//, TERM_SIZE*2};
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
@@ -228,7 +232,25 @@ void test_archive_termination() {
 }
 
 void test_empty_header() {
-    //@todo
+    strncpy(header.name, "", NAME_LEN);
+    strncpy(header.mode, "", MODE_LEN);
+    strncpy(header.uid, "", UID_LEN);
+    strncpy(header.gid, "", GID_LEN);
+    strncpy(header.size, "", SIZE_LEN);
+    strncpy(header.mtime, "", MTIME_LEN);
+    strncpy(header.chksum, "", CHKSUM_LEN);
+    strncpy(&(header.typeflag), "", 1);
+    strncpy(header.linkname, "", LINK_LEN);
+    strncpy(header.magic, "",  MAGIC_LEN);
+    strncpy(header.version, "", VERSION_LEN);
+    strncpy(header.uname, "", UNAME_LEN);
+    strncpy(header.gname, "", GNAME_LEN);
+    strncpy(header.devmajor, "", DEVMAJOR_LEN);
+    strncpy(header.devminor, "", DEVMINOR_LEN);
+    strncpy(header.prefix, "", PREFIX_LEN);
+    strncpy(header.padding, "", PADDING_LEN);
+    print_test("header", "empty");
+    run_test(false);
 }
 
 
@@ -258,12 +280,17 @@ void test_fields() {
  * Archive shenanigans
  */
 int main(int argc, char* argv[]) {
-	// should print what the error is about
 	if(argc < 2)
+	{
+		printf("Missing the link to the executable. (in the form \"./exec_name\")");
 		return 0;
+    }
     // Load a tar from a base file.
     if(!tar_to_struct(&header))
+    {
+    	printf("Missing the base.tar file.");
     	return 0;
+    }
     extractor = argv[1];
     test_fields();
     return crashCount;

@@ -109,7 +109,10 @@ int test(char exec[], char path[]) {
     int rv = 0;
     char cmd[51];
     strncpy(cmd, exec, 25);
-    strncat(cmd, path, 25);
+    char truepath[26];
+    truepath[0] = ' ';
+    strncat(truepath, path, 25);
+    strncat(cmd, truepath, 25);
     char buf[33];
     FILE *fp;
 
