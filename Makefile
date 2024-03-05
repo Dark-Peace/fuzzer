@@ -1,23 +1,28 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
-SRC_DIR = source
+CFLAGS = -Wall -Wextra -std=c11
+SRC_DIR = src
 BUILD_DIR = .
 
-# List of source files
-SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+# List all source files
+SRCS := $(wildcard $(SRC_DIR)/*.c)
 
-# List of object files
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
+# Derive object files from source files
+OBJS := $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-# Main target
-fuzzer: $(OBJ_FILES)
-	$(CC) $(CFLAGS) $^ -o $@
+# The final executable
+TARGET = fuzzer
 
-# Rule to compile individual source files
+# Rule to compile object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: clean
+# Rule to link object files and generate executable
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
 
+# Clean rule
 clean:
-	rm -f $(OBJ_FILES) fuzzer
+	$(RM) $(OBJS) $(TARGET)
+
+# Phony targets
+.PHONY: all clean
