@@ -125,7 +125,7 @@ void test_size() {
     single_test_size("size = 0", 0);
     single_test_size("size = 1", 1);
     single_test_size("size = 512", BLOCK_SIZE);
-    single_test_size("size too big", BLOCK_SIZE*10);
+    single_test_size("size too big", BLOCK_SIZE*5);
 }
 
 void single_test_mtime(char* test_name, int value) {
@@ -233,16 +233,14 @@ void test_empty_header() {
 
 
 void test_fields() {
-    printf("1");
     test_empty_header();
-    printf("2");
     test_name();
 	test_mode();
-    printf("3");
 	test_uid();
-    printf("4");
 	test_gid();
+    printf("ok");
 	test_size();
+    printf("okok");
 	test_mtime();
 	test_chksum();
     printf("5");
