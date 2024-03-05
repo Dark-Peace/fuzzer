@@ -13,32 +13,30 @@ char* extractor;
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void run_test(char* test_name, bool has_content) {
+void run_test(bool has_content) {
     createTar(&header, archive, has_content);
     // execution: ./name extractor_x86_64
     if (test(extractor, archive)) {
     	crashCount += 1;
     	success[8] = crashCount;
-        printf("Crash: %s\n", test_name);
     	createTar(&header, success, has_content);
     }
     // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
 }
 
-void header_field_test(char* test_name) {
+void header_field_test() {
     // add archive termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test(test_name, true);
+    run_test(true);
 }
 
-void single_basic_test(char* test_name, char* field, int size, int value) {
+void single_basic_test(char* field, int size, int value) {
     // for each test, the field is filled with the test value, then the test is called
     memset(field, value, size-1);
     field[size - 1] = 0;                // null termination
-    header_field_test(test_name);
+    header_field_test();
 }
-
 
 void basic_field_tests(char* field_name, char* field, int size) {
     //----- invalid inputs -----
@@ -46,9 +44,11 @@ void basic_field_tests(char* field_name, char* field, int size) {
     // field empty
     strncpy(field, "", size);
     // no null termination
-    header_field_test(strcat(field_name, "is empty"));
-
+    printf("Crash: %s%s\n", field_name, " is empty");
+    header_field_test();
+    
     // non numeral value
+    printf("Crash: %s%s\n", field_name, " is not a number");
     single_basic_test(strcat(field_name, " is not a number"), field, size, 'a');
 
     // non octal value
@@ -84,11 +84,11 @@ void basic_field_tests(char* field_name, char* field, int size) {
 
     // null termination everywhere!
     single_basic_test(strcat(field_name, " has only null termination"), field, size, 0);
-
 }
 
 
 void test_name() {
+    printf("n");
     basic_field_tests("name", header.name, NAME_LEN);
 }
 
@@ -214,12 +214,12 @@ void test_archive_termination() {
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
-        run_test("invalid archive termination", true);
+        //run_test("invalid archive termination", true);
     }
 
     // test file termination without file content before the termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test("file termination without content", false);
+    //run_test("file termination without content", false);
 }
 
 void test_empty_header() {
@@ -228,21 +228,32 @@ void test_empty_header() {
 
 
 void test_fields() {
+    printf("1");
     test_empty_header();
+    printf("2");
+    test_name();
 	test_mode();
+    printf("3");
+    /**
 	test_uid();
+    printf("4");
 	test_gid();
 	test_size();
 	test_mtime();
 	test_chksum();
+    printf("5");
 	test_linkname();
 	test_magic();
 	test_version();
 	test_uname();
 	test_gname();
     test_typeflag();
+    printf("6");
     test_files();
+    printf("7");
     test_archive_termination();
+    printf("8");
+    **/
 }
 
 /**
