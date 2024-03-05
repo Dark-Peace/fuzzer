@@ -39,7 +39,7 @@ void single_basic_test(int x, char* field, int size, int value) {
 }
 
 int print_test(char* field, char* test) {
-    printf("Crash: %s%s\n", field, test);
+    printf("Test: %s%s\n", field, test);
     return 0;
 }
 
