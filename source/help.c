@@ -147,8 +147,9 @@ int extraContent(struct tar_t* entry, char path[], bool checksum)
  */
 int test(char exec[], char path[]) {
     int rv = 0;
-    char cmd[51];
-    strncpy(cmd, exec, 25);
+    char cmd[51] = "./";
+    strncat(cmd, exec, 23);
+    cmd[26] = '\0';
     char truepath[26];
     truepath[0] = ' ';
     strncat(truepath, path, 25);
