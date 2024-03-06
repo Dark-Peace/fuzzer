@@ -150,10 +150,11 @@ int test(char exec[], char path[]) {
     char cmd[51] = "./";
     strncat(cmd, exec, 23);
     cmd[26] = '\0';
-    char truepath[26];
+    /*char truepath[26];
     truepath[0] = ' ';
-    strncat(truepath, path, 25);
-    strncat(cmd, truepath, 25);
+    strncat(truepath, path, 25);*/
+    strncat(cmd, " archive.tar", 25);
+    printf("tar: %s\n%s\n", "", cmd);
     char buf[33];
     FILE *fp;
 
