@@ -2,34 +2,24 @@
 
 // Convert a given tar file to a struct
 int tar_to_struct(struct tar_t* entry) {
-    FILE *fptr;
-    fptr = fopen("base.tar", "r");
-    if(!fptr)
-    {
-        printf("Base file missing.\n");
-    	return 0;
-	}
-
-    for (int i = 0; i < 100; i++) { entry->name[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->mode[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->uid[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->gid[i] = fgetc(fptr); }
-    for (int i = 0; i < 12; i++) { entry->size[i] = fgetc(fptr); }
-    for (int i = 0; i < 12; i++) { entry->mtime[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->chksum[i] = fgetc(fptr); }
-    entry->typeflag = fgetc(fptr);
-    for (int i = 0; i < 100; i++) { entry->linkname[i] = fgetc(fptr); }
-    for (int i = 0; i < 6; i++) { entry->magic[i] = fgetc(fptr); }
-    for (int i = 0; i < 2; i++) { entry->version[i] = fgetc(fptr); }
-    for (int i = 0; i < 32; i++) { entry->uname[i] = fgetc(fptr); }
-    for (int i = 0; i < 32; i++) { entry->gname[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->devmajor[i] = fgetc(fptr); }
-    for (int i = 0; i < 8; i++) { entry->devminor[i] = fgetc(fptr); }
-    for (int i = 0; i < 155; i++) { entry->prefix[i] = fgetc(fptr); }
-    for (int i = 0; i < 12; i++) { entry->padding[i] = fgetc(fptr); }
-    for (int i = 0; i < BLOCK_SIZE; i++) { entry->content[i] = fgetc(fptr); }
-
-    fclose(fptr);
+	strcpy(entry->name, "README.md");
+	strcpy(entry->mode, "0000664");
+	strcpy(entry->uid, "0001750");
+	strcpy(entry->gid, "0001750");
+	strcpy(entry->size, "00000000010");
+	strcpy(entry->mtime, "14567334135");
+	strcpy(entry->chksum, "013157");
+	strcpy(entry->linkname, "");
+	strcpy(entry->magic, "ustar");
+	strcpy(entry->version, "00client");
+	strcpy(entry->uname, "client");
+	strcpy(entry->gname, "client");
+	strcpy(entry->devmajor, "0000000");
+	strcpy(entry->devminor, "0000000");
+	strcpy(entry->prefix, "");
+	strcpy(entry->padding, "");
+	strcpy(entry->devminor, "");
+	strcpy(entry->content, "# fuzzer");
     return 1;
 }
 
@@ -76,11 +66,12 @@ int writeHeader(struct tar_t* entry, FILE* fptr)
     fwrite(entry->devmajor, DEVMAJOR_LEN, 1, fptr);
     fwrite(entry->devminor, DEVMINOR_LEN, 1, fptr);
     fwrite(entry->prefix, PREFIX_LEN, 1, fptr);
+    fwrite(entry->padding, PADDING_LEN, 1, fptr);
     return 1;
 }
 
 // Create a valid tar from the given struct.
-int createTar(struct tar_t* entry, char path[], bool has_content, bool write, bool final) {
+int createTar(struct tar_t* entry, char* path, bool has_content, bool write, bool final) {
     FILE *fptr;
     // If not write mode we write back.
     // @todo: delete the last one instead, and always wb
@@ -94,8 +85,8 @@ int createTar(struct tar_t* entry, char path[], bool has_content, bool write, bo
     }
 
     // calculate the padding
-    unsigned size_padding = 512 - ((int) entry->size % 512);
-    memset(entry->padding, 0, size_padding);
+    //unsigned size_padding = 512 - ((int) entry->size % 512);
+    //memset(entry->padding, 0, size_padding);
 	
     // last modif to the data
     calculate_checksum(entry);
@@ -105,11 +96,11 @@ int createTar(struct tar_t* entry, char path[], bool has_content, bool write, bo
 
     if(has_content) {
     	fwrite(entry->content, BLOCK_SIZE, 1, fptr);
-		fwrite(entry->padding, size_padding, 1, fptr);
+		//fwrite(entry->padding, size_padding, 1, fptr);
     }
     
 
-	if(final || write)
+	//if(final || write)
 		fwrite(entry->termination, TERM_SIZE, 1, fptr);
 
     fclose(fptr);
@@ -117,7 +108,7 @@ int createTar(struct tar_t* entry, char path[], bool has_content, bool write, bo
 };
 
 // Like the function before but write a lot of content.
-int extraContent(struct tar_t* entry, char path[], bool checksum)
+int extraContent(struct tar_t* entry, char* path, bool checksum)
 {
 	FILE *fptr;
     fptr = fopen(path, "a");
@@ -145,16 +136,12 @@ int extraContent(struct tar_t* entry, char path[], bool checksum)
  *          0 if it is launched but does not print "*** The program has crashed ***",
  *          1 if it is launched and prints "*** The program has crashed ***".
  */
-int test(char exec[], char path[]) {
+int test(char* exec, char* path) {
     int rv = 0;
-    char cmd[51] = "./";
-    strncat(cmd, exec, 23);
+    char cmd[51];
+    strncpy(cmd, exec, 25);
     cmd[26] = '\0';
-    /*char truepath[26];
-    truepath[0] = ' ';
-    strncat(truepath, path, 25);*/
     strncat(cmd, " archive.tar", 25);
-    printf("tar: %s\n%s\n", "", cmd);
     char buf[33];
     FILE *fp;
 
@@ -164,7 +151,7 @@ int test(char exec[], char path[]) {
     }
 
     if(fgets(buf, 33, fp) == NULL) {
-        printf("No output\n");
+        printf("No output; ");
         goto finally;
     }
     if(strncmp(buf, "*** The program has crashed ***\n", 33)) {

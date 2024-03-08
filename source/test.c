@@ -7,29 +7,38 @@ int crashCount = 0;
 // Names of the successful tars.
 static struct tar_t header;
 char* extractor;
+// By default assume it's in the same folder as the program is launched.
+char* folder = "";
 
 
 void saveSuccess(bool has_content)
 {
-	crashCount += 1;
 	char *success_nbr;
-	asprintf(&success_nbr, "%d", crashCount);
-	char success_string[16] = "success_";
+	char success_string[25];
+	strcpy(success_string, folder);
+	strcat(success_string, "success_");
+	asprintf(&success_nbr, "%i", crashCount);
 	strcat(success_string, success_nbr);
-	strncat(success_string, ".tar", 4);
+	strcat(success_string, ".tar");
 	createTar(&header, success_string, has_content, true, true);
+	crashCount += 1;
 }
 
 // Create a tar, test it and save it if it crashed the program.
 // Resets the tar struct after.
-void run_test(bool has_content) {
+int run_test(bool has_content) {
     createTar(&header, archive, has_content, true, true);
     // execution: ./name ./extractor_x86_64
+    int rv = 0;
     if (test(extractor, archive))
+    {
+    	rv = 1;
     	saveSuccess(has_content);
+    }
 
     // Reset for next test : Load a tar from a base file
     tar_to_struct(&header);
+    return rv;
 }
 
 //
@@ -46,13 +55,13 @@ void run_test_append(int amount) {
     tar_to_struct(&header);
 }
 
-void header_field_test(int x) {
+int header_field_test(int x) {
     // add archive termination
     memset(header.termination, 0, TERM_SIZE);
-    run_test(true);
+    return run_test(true);
 }
 
-void single_basic_test(int x, char* field, int size, int value) {
+int single_basic_test(int x, char* field, int size, int value) {
     // for each test, the field is filled with the test value, then the test is called
     memset(field, value, size-1);
     field[size - 1] = 0;                // null termination
@@ -84,7 +93,8 @@ void basic_field_tests(char* field_name, char* field, int size) {
 
     // control characters
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
-        single_basic_test(print_test(field_name, " has a control character"), field, size, control_chars[i]);
+        if(single_basic_test(print_test(field_name, " has a control character"), field, size, control_chars[i]))
+        	break;
     }
 
     //----- other inputs -----
@@ -134,7 +144,7 @@ void test_gid() {
 }
 
 void single_test_size(char* test_name, int value) {
-    sprintf(header.size, "%0*lo", value);
+    sprintf(header.size, "%i", value); // was "%0*lo"
     header_field_test(print_test(test_name, " "));
 }
 
@@ -149,7 +159,7 @@ void test_size() {
 }
 
 void single_test_mtime(char* test_name, int value) {
-    sprintf(header.mtime, "%lo", value);
+    sprintf(header.mtime, "%i", value);
     header_field_test(print_test(test_name, " "));
 }
 
@@ -185,9 +195,9 @@ void test_version() {
     // we can afford it because there's not many
     char version[3] = "00\0";
     for (int i = 0; i < 8; i++) {
-        version[0] = "0"+i;
+        version[0] = '0'+i;
         for (int j = 0; j < 8; j++) {
-            version[1] = "0"+j;
+            version[1] = '0'+j;
             strncpy(header.version, version, VERSION_LEN);
             header_field_test(print_test("bad version", " "));
         }
@@ -299,7 +309,7 @@ void test_empty_header() {
 
 void test_fields() {
     test_empty_header();
-    test_name();
+    //test_name();
 	test_mode();
 	test_uid();
 	test_gid();
@@ -312,7 +322,7 @@ void test_fields() {
 	test_uname();
 	test_gname();
     test_typeflag();
-    test_files();
+    //test_files();
     test_archive_termination();
 }
 
@@ -336,6 +346,22 @@ int main(int argc, char* argv[]) {
     }
     extractor = argv[1];
     
+	int fileI = 0;
+    for (int i = 0; i < strlen(extractor) - 1; i++)
+    {
+    	if(extractor[i] == '/' || extractor[i] == '\\')
+    		fileI = i;
+    }
+	char path[20];
+    // To make sure it isn't just './'
+	if(fileI > 2)
+	{
+		// Ignore the './' but keep the '/' at the end of the path.
+		for (int i = 0; i < fileI - 1; i++)
+			path[i] = extractor[i + 2];
+		path[fileI] = '\0';
+	}
+	folder = path;
     test_fields();
     return crashCount;
 };
