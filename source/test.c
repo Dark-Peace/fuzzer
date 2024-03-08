@@ -15,8 +15,7 @@ void saveSuccess(bool has_content)
 {
 	char *success_nbr;
 	char success_string[25];
-	strcpy(success_string, folder);
-	strcat(success_string, "success_");
+	strcpy(success_string, "success_");
 	asprintf(&success_nbr, "%i", crashCount);
 	strcat(success_string, success_nbr);
 	strcat(success_string, ".tar");
