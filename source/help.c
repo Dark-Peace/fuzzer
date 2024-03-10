@@ -3,23 +3,25 @@
 // Convert a given tar file to a struct
 int tar_to_struct(struct tar_t* entry) {
 	strcpy(entry->name, "README.md");
-	strcpy(entry->mode, "0000664");
-	strcpy(entry->uid, "0001750");
-	strcpy(entry->gid, "0001750");
+	strcpy(entry->mode, "000664");
+	strcpy(entry->uid, "001750");
+	strcpy(entry->gid, "001750");
 	strcpy(entry->size, "00000000010");
 	strcpy(entry->mtime, "14567334135");
 	strcpy(entry->chksum, "013157");
-	strcpy(entry->linkname, "");
+	entry->typeflag = '0';
+	memset(entry->linkname, 0, LINK_LEN);
 	strcpy(entry->magic, "ustar");
 	strcpy(entry->version, "00client");
 	strcpy(entry->uname, "client");
 	strcpy(entry->gname, "client");
-	strcpy(entry->devmajor, "0000000");
-	strcpy(entry->devminor, "0000000");
-	strcpy(entry->prefix, "");
-	strcpy(entry->padding, "");
-	strcpy(entry->devminor, "");
+	// This initialises it to 0.
+	memset(entry->prefix, 0, PREFIX_LEN);
+	strncpy(entry->devminor, "000000 ", DEVMINOR_LEN);
+	strncpy(entry->devmajor, "000000 ", DEVMAJOR_LEN);
+	memset(entry->padding, 0, PADDING_LEN);
 	strcpy(entry->content, "# fuzzer");
+	memset(entry->termination, 0, 1024);
     return 1;
 }
 
@@ -71,52 +73,41 @@ int writeHeader(struct tar_t* entry, FILE* fptr)
 }
 
 // Create a valid tar from the given struct.
-int createTar(struct tar_t* entry, char* path, bool has_content, bool write, bool final) {
+int create_tar(struct tar_t* entry, char* path, bool has_content) {
     FILE *fptr;
-    // If not write mode we write back.
-    // @todo: delete the last one instead, and always wb
-    if(write)
-    	fptr = fopen(path, "w");
-    else
-    	fptr = fopen(path, "wb");
-    if(!fptr) {
-    	return 0;
-        printf("Could not write archive file.\n");
-    }
-
-    // calculate the padding
-    //unsigned size_padding = 512 - ((int) entry->size % 512);
-    //memset(entry->padding, 0, size_padding);
-	
-    // last modif to the data
-    calculate_checksum(entry);
-
-    // write the result to a tar file
-    writeHeader(entry, fptr);
-
-    if(has_content) {
-    	fwrite(entry->content, BLOCK_SIZE, 1, fptr);
-		//fwrite(entry->padding, size_padding, 1, fptr);
-    }
-    
-
-	//if(final || write)
-		fwrite(entry->termination, TERM_SIZE, 1, fptr);
-
-    fclose(fptr);
-    return 1;
-};
-
-// Like the function before but write a lot of content.
-int extraContent(struct tar_t* entry, char* path, bool checksum)
-{
-	FILE *fptr;
+    // Always write back, and assume the file has been cleared before calling this function if needed.
     fptr = fopen(path, "a");
     if(!fptr) {
     	return 0;
         printf("Could not write archive file.\n");
     }
-    //strncpy(entry->size, BLOCK_SIZE * 5, SIZE_LEN);
+	
+	// last modif to the data
+    calculate_checksum(entry);
+
+    // write the result to a tar file
+    writeHeader(entry, fptr);
+
+    if(has_content)
+    	fwrite(entry->content, BLOCK_SIZE, 1, fptr);
+    	
+    // Given the small size of all content blocks, this is not required.
+	//fwrite(entry->termination, TERM_SIZE, 1, fptr);
+
+    fclose(fptr);
+    return 1;
+};
+
+// Like the function before but write a lot of content or ommit the checksum.
+int extra_content(struct tar_t* entry, char* path, bool checksum)
+{
+	FILE *fptr;
+	// Write mode is ok for this.
+    fptr = fopen(path, "w");
+    if(!fptr) {
+    	return 0;
+        printf("Could not write archive file.\n");
+    }
     
     if(checksum)
     	calculate_checksum(entry);
@@ -127,6 +118,8 @@ int extraContent(struct tar_t* entry, char* path, bool checksum)
     fclose(fptr);
     return 1;
 };
+
+
 
 /**
  * Launches another executable given as argument,

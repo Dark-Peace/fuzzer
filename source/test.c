@@ -5,53 +5,71 @@
 // For proper naming of the successful tars.
 int crashCount = 0;
 // Names of the successful tars.
-static struct tar_t header;
-char* extractor;
 // By default assume it's in the same folder as the program is launched.
-char* folder = "";
+char* successFile = "success_";
+// To avoid having to pass it around everywhere one header is declared here.
+static struct tar_t header;
+
+char* extractor;
 
 
-void saveSuccess(bool has_content)
+// Used when a successful tar is found, to copy it.
+void saveSuccess()
 {
-	char *success_nbr;
 	char success_string[25];
-	strcpy(success_string, "success_");
+	strcpy(success_string, successFile);
+	
+	char *success_nbr;
 	asprintf(&success_nbr, "%i", crashCount);
 	strcat(success_string, success_nbr);
+
 	strcat(success_string, ".tar");
-	createTar(&header, success_string, has_content, true, true);
+	// save it to path/success_X.tar
+	create_tar(&header, success_string, true);
 	crashCount += 1;
 }
 
+// Used to return to a blank state.
+void reset() {
+	// Delete the previous archive file so we can always append.
+	remove(archive);
+    // Reset for next test : Load a tar from a base file
+    tar_to_struct(&header);
+}
+
 // Create a tar, test it and save it if it crashed the program.
-// Resets the tar struct after.
+// Resets the tar struct after, and return if this was a success, so we dont test variations of the same attempt afterwards.
 int run_test(bool has_content) {
-    createTar(&header, archive, has_content, true, true);
-    // execution: ./name ./extractor_x86_64
+    create_tar(&header, archive, has_content);
     int rv = 0;
+    // execution: ./name ./extractor_x86_64
     if (test(extractor, archive))
     {
     	rv = 1;
-    	saveSuccess(has_content);
+    	saveSuccess();
     }
-
-    // Reset for next test : Load a tar from a base file
-    tar_to_struct(&header);
+	
+	reset();
     return rv;
 }
 
-//
-void run_test_append(int amount) {
+// Same as the function above, but will add <amount> multiple files to the same archive, optionaly with all having the same name.
+void run_test_append(int amount, bool sameName) {
     for (int i = 0; i < amount - 1; i++)
-    	createTar(&header, archive, true, false, false);
-	createTar(&header, archive, true, false, true);
+    {
+    	if(!sameName)
+    	{
+			char *nbr;
+			asprintf(&nbr, "%i", i);
+    		strncpy(header.name, nbr, NAME_LEN);
+    	}
+    	create_tar(&header, archive, true);
+    }
     
-    // execution: ./name ./extractor_x86_64
     if (test(extractor, archive))
     	saveSuccess(true);
 
-    // Reset for next test : Load a tar from a base file
-    tar_to_struct(&header);
+	reset();
 }
 
 int header_field_test(int x) {
@@ -87,11 +105,11 @@ void basic_field_tests(char* field_name, char* field, int size) {
     single_basic_test(print_test(field_name, " is not octal"), field, size, '9');
 
     // non ascii value (any emoji or unicode character in general is valid)
-    // you can get unicode char on https://symbl.cc/fr/
     single_basic_test(print_test(field_name, " is not ascii"), field, size, '♥');
 
     // control characters
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
+    	// make sure we only count it once by breaking once one of them works
         if(single_basic_test(print_test(field_name, " has a control character"), field, size, control_chars[i]))
         	break;
     }
@@ -217,7 +235,7 @@ void test_typeflag() {
     header_field_test(print_test("negative typeflag", " "));
 
     // test non-ascii
-    header.typeflag = "♥";
+    header.typeflag = '♥';
     header_field_test(print_test("non ascii typeflag", " "));
 
     for (int i = 0; i < (int) sizeof(control_chars); i++) {
@@ -234,42 +252,47 @@ void test_typeflag() {
 
 }
 
-void test_files() {
-	// multiple files with the same name
-	print_test("5 same files in directory", " with the same name");
-	run_test_append(5);
-	
-    
-    print_test("big", " file");
-    // custom run_test to use the extraContent function
-    extraContent(&header, archive, true);
+
+// Essentially a custom run_test to force extra content on the file.
+void test_big_files() {
+	print_test("big", " file");
+    extra_content(&header, archive, true);
     if (test(extractor, archive)) {
 		saveSuccess(true);
     }
-    // Reset for next test : Load a tar from a base file
-    tar_to_struct(&header);
+    reset();
     
     print_test("big", " file without checksum");
-    // custom run_test to use the extraContent function
-    extraContent(&header, archive, false);
+    extra_content(&header, archive, false);
     if (test(extractor, archive)) {
 		saveSuccess(true);
     }
-    // Reset for next test : Load a tar from a base file
-    tar_to_struct(&header);
+    reset();
+}
+
+// Tests with big files and archives.
+void test_files() {
+	// multiple files with the same name
+	print_test("5 files in archive", " with the same name");
+	run_test_append(5, true);
+	
+    test_big_files();
     
+    // Change the name to be a directory, but keep the content as a tar file.
     strncpy(header.name, "archive/", NAME_LEN);
     print_test("directory", " as a file");
     run_test(true);
     
-    
+    // Make it extract a big amount of files from a single archive.
 	print_test("Too big directory", "");
-	run_test_append(1000);
+	run_test_append(1000, false);
 }
 
+
+// Test improper archive terminations sizes.
 void test_archive_termination() {
     // tar files end by 1024 bytes of 0, we test what happens if that's not the case
-    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1};//, TERM_SIZE+1};//, TERM_SIZE*2};// gives archive.tar not found, then segfault?
+    int term_amount[] = {0, 1, TERM_SIZE/2 , TERM_SIZE-1};//, TERM_SIZE+1};//, TERM_SIZE*2}; // gives archive.tar not found, then segfault? disabled for safety
 
     for (unsigned i = 0; i < sizeof(term_amount)/sizeof(int); i++) {
         memset(header.termination, 0, term_amount[i]);
@@ -306,9 +329,12 @@ void test_empty_header() {
 }
 
 
-void test_fields() {
+
+// Start all the tests.
+void run_all_tests() {
     test_empty_header();
-    //test_name();
+    // Note: if the extractor does not crash this will cause it to create files with weird names.
+    test_name();
 	test_mode();
 	test_uid();
 	test_gid();
@@ -321,46 +347,59 @@ void test_fields() {
 	test_uname();
 	test_gname();
     test_typeflag();
-    //test_files();
+    test_files();
     test_archive_termination();
 }
 
 /**
  * Creates tars and tests if they crash the program provided as argument.
- * If one does, copy it and name it success_X.
- * The methods used for crashing are: incomplete/inappropriate header.
- * Archive shenanigans
+ * If one does, copy it and name it path/success_X.tar
+ * The methods used for crashing are: incomplete/inappropriate header and archive shenanigans.
+ * All the relevant functions are present above.
  */
 int main(int argc, char* argv[]) {
+	// Assumed execution: "./fuzzer ./<path/>extractor"
 	if(argc < 2)
 	{
 		printf("Missing the link to the executable. (in the form \"./exec_name\")");
 		return 0;
     }
-    // Load a tar from a base file.
-    if(!tar_to_struct(&header))
-    {
-    	printf("Missing the base.tar file.");
-    	return 0;
-    }
+    // Load a default tar file.
+    tar_to_struct(&header);
+	
+	// Recover the path to the executable and the folder we're in, if any.
     extractor = argv[1];
     
+    // The position of the last '/'.
 	int fileI = 0;
     for (int i = 0; i < strlen(extractor) - 1; i++)
-    {
     	if(extractor[i] == '/' || extractor[i] == '\\')
     		fileI = i;
-    }
-	char path[20];
+    
+	char path[21];
     // To make sure it isn't just './'
 	if(fileI > 2)
 	{
-		// Ignore the './' but keep the '/' at the end of the path.
+		// Do not copy the initial './', but keep the '/' at the end of the path.
 		for (int i = 0; i < fileI - 1; i++)
 			path[i] = extractor[i + 2];
-		path[fileI] = '\0';
+		strncat(path, "success_", 8);
 	}
-	folder = path;
-    test_fields();
-    return crashCount;
+	else
+		strcpy(path, "success_");
+	successFile = path;
+	
+    // See if we can create a tar file in that folder.
+	if(!create_tar(&header, successFile, true))
+	{
+		printf("Failed to create a tar file, exiting.");
+		printf(successFile);
+		return 0;
+	}
+	remove(successFile);
+	
+	// Test all crashes.
+	run_all_tests();
+    
+    return 1;
 };
